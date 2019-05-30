@@ -1,0 +1,1413 @@
+---
+
+
+```{r 'check_ps', include=FALSE}
+
+user.name = '' # set to your user name
+
+# To check your problem set, save your file (Ctrl-S) and then run the RStudio Addin 'Check Problemset'
+
+# Alternatively run the following lines 
+library(RTutor)
+ps.dir = getwd() # directory of this file
+ps.file = 'TheBiddersCurse.Rmd' # name of this file
+check.problem.set('TheBiddersCurse', ps.dir, ps.file, user.name=user.name, reset=FALSE)
+```
+
+
+---
+# Problem Set: The Bidder's Curse
+
+Author: Paul Erhardt
+
+
+
+## Exercise Overview
+
+Welcome to this interactive problem set which is part of my master's thesis at Ulm University. It analyses the phenomenon of "overbidding" in online auctions on eBay, that is to say, bidding more for an item than it would cost when bought immediately on the same webpage. This investigation is based on the paper "The Bidder's Curse" from Ulrike Malmendier and Young Han Lee, published in 2011. However, results may slightly differ due to missing data, different calculation methods and rounding errors. You can download the paper as well as additional material like the data sets here: [The Bidder's Curse](https://www.aeaweb.org/articles?id=10.1257/aer.101.2.749). 
+
+The authors examined auctions at the American eBay platform (ebay.com) where the same item was also continuously available for immediate purchase at a fixed price, so called buy-it-now offer (BIN offer). Rational bidders are expected to never bid above that fixed price as they could switch to the BIN offer at any time and purchase the item immediately for the buy-it-now price (BIN price).
+
+However, the authors find a large proportion of auctions with closing prices being significantly greater than the respective BIN prices (overbidding). This observation is not restricted to few specific items but is rather pervasive. It is observable for many different product categories and price levels.
+The authors denote this phenomenon of overbidding as the "Bidder's Curse", not to be confused with the Winners Curse. The winner's curse describes the effect, that winning bidders of a common value auction systematically pay too much due to incomplete information. When multiple bidders base their bids on their own estimated value, winning the auction tells the winning bidder that his evaluation might be an overestimate of the item's value (Kagel & Levin, 2009). The "curse" in this context describes the effect of realising a "bad deal" whenever someone is picked as winner because of the auction's design.
+
+In the following problem set, you will derive most results of the paper by yourself, interactively using the programming language R. You will investigate the occurrence of overbidding and possible reasons that might cause such a behaviour. This way, you can improve your R programming skills while gaining an insight into an interesting part of behavioural economics. If you need an introduction to R, you can download a beginner guide from Paradis, E. (2002) here: [R for Beginners](https://cran.r-project.org/doc/contrib/Paradis-rdebuts_en.pdf).
+
+The problem set is structured as follows:
+
+## Content
+
+  1. Introduction
+  
+  2. The Phenomenon of Overbidding
+  
+  3. Disproportional Influence of Overbidders
+  
+  4. Overbidding at Various Products
+  
+  5. (Excursus) - Hypothesis: Overbidding is Significant on Averages
+  
+  6. Possible Factors Influencing Overbidding
+  
+  7. Regression Analysis
+    
+  8. (Excursus) - Availability of BIN Offers
+  
+  9. Conclusion
+
+  References
+
+## Outline
+
+In *Exercise 1* I introduce you to the first data set, containing information about eBay auctions of a popular board game. We make use of some basic R functions to get a quick overview of the data.
+
+In *Exercise 2* we look at the act of overbidding and investigate how overbid auctions are distributed. For this purpose we determine in how many auctions the board game is overpayed and by how much. In doing so, we compare prices without respecting shipping costs to shipping included prices. 
+
+In *Exercise 3* we compare the frequency of overbid auctions, the amount of "overbidders" and the proportion of overbids. This way we can observe how the act of overbidding influences the auctions outcome.
+
+*Exercise 4* introduces a new data set. It contains information about eBay auctions as well but for many different items. After making ourselves familiar with these items, we compare the frequency of overbidding among different product categories.
+
+In *Exercise 5* we do a hypothesis test in form of an excursus and check whether the average amount of overbidding we observe is significant.
+
+*Exercise 6* deals with factors that might be correlated to overbidding. This includes the analysis of bidder's experience and participation length in auctions as well as the division of our data into demographic groups and price levels.
+
+In *Exercise 7* we then model the relationship between the probability of a bidder submitting an overbid and some of these influencing factors by performing a probit regression.
+
+*Exercise 8* is a small excursus about the handling of time formats in R. The availability of BIN offers on eBay for price comparison is assumed to be given for any point in time. We check whether suitable BIN offers were available for actually all periods where auctions of our first data set were running.
+
+Finally, *Exercise 9* summarises our results.
+ 
+## How to solve this Problem Set
+
+All exercises can be solved independently from each other. However, I recommend doing them in the given order for content-related reasons. Within an exercise, doing tasks in the right order is mandatory.
+
+**Info Boxes:**
+
+Info boxes are folded, just click on them to open and show more information. These boxes are constructed to save space as they contain detailed information about functions or variables. These boxes can be skipped, yet reading them is suggested.
+
+**Quizzes:**
+
+Quizzes are used to test your newly acquired knowledge but are not necessary to proceed. Select one or more options and press `check` to test your answer.
+
+**Code Chunks:**
+
+Code chunks are used to enter and run R code. In each exercise, you need to solve a chunk before you can go on with the next one. In order to interact with these chunks, you have several buttons to click on:
+
+
+- `edit:` When clicking on `edit`, you are able to modify the code within the chunk or enter new one. You always have to press this button first.
+  
+-  `check:` This button checks your solution and, if correct, makes the next chunk accessible to edit.
+  
+-  `hint:` If you need help solving the chunk, the `hint` button might give you a useful advice what to insert.
+  
+- `run chunk:` This button runs the code without checking it against the deposited solution. This is useful if you want to try something out by running different functions.
+
+- `data:` This button sends you to the data explorer in which you can take a look at the data sets used.
+  
+-  `solution:` Click on this button if you are stuck. It displays a sample solution. After using this button you just have to click on `check` to proceed.
+
+
+**Tasks:**
+
+Tasks are something where your involvement is necessary. Here you are supposed to complete the code. Wherever you see a long underscore `___`, there is something missing.
+Most of the time, you are given the body of the code and you are asked to fill in some parts like new functions. Make sure you remove the underscores when filling in some code, otherwise R don't  recognizes it as runnable code.
+Sometimes you will find code chunks without a task to do. In this case, just press `edit` and `check` afterwards.
+
+**Awards:** 
+
+You will earn awards for solving difficult tasks or larger exercises. Use `awards()` in any code chunk and run it to show all of them you collected so far.
+
+**Navigation**
+
+In order to navigate through the problem set, you can either use the taps for switching exercises or use the button on the bottom saying `Go to next exercise...` to proceed.
+At the start of each exercise, you need to load the required data sets again because data is only available within an exercise. Data from different exercises is not linked.
+
+## Exercise 1 -- Introduction
+
+Let us begin with the first exercise. We will make ourselves familiar with the functioning of eBay auctions and take a brief look at the theory of rational behaviour. Furthermore, we will investigate the type of data we are using most by utilising a few data evaluation functions.
+
+### Observational Data and Auction Theory
+To investigate the Bidder's Curse phenomenon, we are using data tables, generated from the American eBay platform. There are basically four data sets: The first one contains 167 eBay auctions of a popular board game from February to September 2004. The second one contains a history of bids for these auctions. The third data set contains 487 BIN offers for this particular board game from the same time period. The fourth data set consists of 1886 auctions for 94 other products from February, April and May 2007.
+
+The eBay website is an auction platform where bidders can purchase items at. When sellers list items, they determine the auction length (usually seven days) and the start price. Bidders can place multiple bids at any time, visible for other bidders. The winner of the auction has to pay the final price which is the amount of the second highest bid plus a small increment (usually 1% to 5% of the second highest bid (eBay (2019))). We neglect this increment for reasons of simplicity. Therefore, we are basically studying bidders behaviour in a modified open-bid second-price auction. In game theory, a basic setup for this type of auction has a unique symmetric equilibrium depending on the bidder's item valuation and signals of competing bidder's (Harstad, R. M. et al. (1990)).
+However, multiple bidding and existence of a fixed price offer change the framework of the game. Thus, determining equilibria is difficult but it is clear that rational bidders never bid above the fixed price if there are no switching costs or kinds of uncertainty (Malmendier, U., & Lee, Y. H. (2011)).
+
+
+### The "Cashflow 101" Game
+The first data set we use for looking at the Bidder's Curse phenomenon is a table, containing 167 eBay auctions of the board game "Cashflow 101" from February to September 2004. It is already prepared, such that it only contains non-cancelled auctions with a BIN offer available at the same time.
+
+"Cashflow 101" was invented by Robert Kiyosaki (1996). It is more a collection of financial advises than a board game for pure entertainment and that is the reason why it is quite expensive. Do not consider buyers to be irrational just because they bid between $80 and $180 for a board game. In addition, if they do not care about prices, they would buy it instantly instead of spending their time in bidding at an auction. So this game matches our demand for a homogenous item which is also available throughout the whole auction for a stable fixed price.
+
+![cf101](cf101.jpg)
+
+*Source: http://www.smartpinoyinvestor.com/wp-content/uploads/2014/02/*
+
+In order to work with the data, we first need to load it into the R environment of this problem set.
+There are many different file types and for every one of them, there is an appropriate read command. We will only use .rds files in this problem set for performance reasons. The associated  read command is `readRDS()`.
+
+In the following tasks we want to get a brief overview of the Cashflow data and introduce the first bunch of important functions.
+
+Start with loading the data set of Cashflow 101 auctions using `readRDS()`.
+After loading the Cashflow data, save it in the variable `cf`. To do so, just press `edit` and `check` afterwards.
+```{r "1"}
+cf <- readRDS("cf.rds")
+```
+
+Now we have made the data set available for use. Let us take a look at it by displaying the first few rows. Make yourself familiar with the `head()` function, explained in the info box below. 
+
+**Task:** Open the following info box.
+
+info("head() and tail()") # Run this line (Strg-Enter) to show info
+
+**Task:** Display the first four rows of the Cashflow data `cf` using the `head()` function.
+```{r "1__2"}
+
+# insert your code here
+
+```
+Sometimes the output is too large to be fully displayed (like in this case). Move the scroll bar at the bottom of the table to the right to see the other variables.
+
+Each row represents an auction for a Cashflow 101 board game. The first auction for example starts with a price of $1, which was set by the seller when creating the listing. In addition to the final price of $132.50, the winner `lopscrus` has to pay $12 shipping costs which sums up to a total of $144.50. Because there is a BIN offer available throughout the whole auction (from Feb 22 to Feb 29 2004) for $129.95, the auction is considered to be overbid by $2.55. When comparing shipping included prices, the difference is even bigger ($4.60) because the BIN offer has cheaper shipping costs as well.
+
+In the following info box, the different variables are explained in detail:
+
+info("Declaration of Variables - cf") # Run this line (Strg-Enter) to show info
+
+When you look at the data, you might notice that all matching BIN prices you can see in the first few rows of our data frame are $129.95. Actually, there are only two sellers who offer Cashflow 101 games for buying it now. One requests $129.95, the other $139.95. In fact, 138 ouf of 166 observations have a matching BIN price of $129.95 which is 83% of all cases. Thus, we should find prices below that most of the time and there should not be any bidder buying the game for more than $140. Let's check this.
+
+The capabilities of the programming language R are extended through user-created packages. The `library(R-Package)` command loads these additional R packages into the workspace so that you can use a whole lot of new R functions that someone has created to complement standard R functions. If you face an error of the form "could not find function "XY", try to load the appropriate package again. Loaded packages are only accessible within the same exercise tab.
+
+info("Function: filter()") # Run this line (Strg-Enter) to show info
+
+**Task:** Find out which items are sold for a `finalprice` of more than $140. Use the `filter()` function for this task. If you are struggling with the syntax, take the code from the info box above as an example.
+Replace the underscore (`___`) with the right variable.
+```{r "1__4"}
+filter(cf, ___ > 140)
+
+```
+We observe a lot of auctions (45 out of 167) that end with a final price above $140.
+
+Because the variable `cf` is a data frame, you can access single columns by using a dollar sign `$` between the names of the variable and the column.
+Most R functions are quite intuitive, such as computing the length `length(x)`, minimum `min(x)`, maximum `max(x)`, mean `mean(x)`, median `median(x)` or any other quantile `quantile(x)` of a vector x.
+
+**Task:** Find the mean final prices and shipping costs for all Cashflow games. Calculate the mean for `finalprice` (without shipping) and the mean of the variable `shippinginfo`.
+
+**Note:** The argument `na.rm=TRUE` is necessary when a variable contains non-numeric values like text (for example there is a shipping option called "Local pickup" on eBay).
+```{r "1__5"}
+___(cf$finalprice)
+___(cf$___, na.rm = TRUE)
+
+```
+We conclude: The mean final price of $131.96 is quite high, which is surprising as $129.95 is the buy-it-now price for a brand new item almost all of the time. One could argue that clever buyers on eBay consider shipping costs and they might be higher for BIN offers. However, the mean shipping costs for Cashflow 101 account for $12,51 which is even more than shipping costs for BIN offers (we will see later that they are $9.95 and $10.95)
+
+In the next task, we want to find out if the Cashflow 101 board game is something that bidders want to buy several times or if they usually purchase this item just once. To find an answer, we help ourselves with another useful R base function: `unique(data)` removes all duplicate rows in a data set.
+
+### Quiz 1: Unique Buyers
+#! addon__quiz__Unique Buyers
+
+**Task:** How many unique buyers do we have? Find it out by creating a vector of unique `winbidders` and calculate the length of it.
+```{r "1__6"}
+length(___(cf$___))
+
+```
+167 items are sold to 164 different buyers. Hence, it seems like it is not worth buying multiple copies of a Cashflow 101 board game.
+
+In the last task, we want to study at which days auctions typically end within the week. For this purpose, we make use of some more functions. The `dplyr` package provides some useful tools for data manipulation and restructuring. The function `arrange()` orders the rows of a data frame by a specific variable (ascending by default). The function `group_by()` groups a data frame by the value of one or more variables and makes sure that following operations are done for each group separately. It works very well in combination with `summarise()` which typically summarises a data frame to a set of single values.
+
+info("Data-manipulating Functions of dplyr") # Run this line (Strg-Enter) to show info
+
+When using data manipulating functions, you usually have to save the output of every operation in a new variable. This produces quite an amount of code lines and slows down the run time. In order to avoid saving intermediate results or nesting a bunch of functions into each other, we will use the pipe operator (%>%).
+
+info("Pipe Operator %>%") # Run this line (Strg-Enter) to show info
+
+**Task:** Create a table which lists the number of finished auctions for each weekday. Use `group_by()` for the variable `weekday_auctionend`, `summarise()` the absolut frequency for each group and `arrange()` the data nicely from Monday to Sunday.
+```{r "1__11"}
+cf %>%
+  select(weekday_auctionend) %>%
+  group_by(___) %>%
+  ___(n = n()) %>%
+  arrange(match(weekday_auctionend, c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")))
+
+```
+
+
+Auctions at eBay usually last seven days (however, there are exceptions). In addition, people have more time to surf on eBay's website beside their regular job: in the evening and especially on the weekend. Therefore, it is no surprise that most auctions end on a Saturday or Sunday.
+
+Now you know more about the board game Cashflow 101 and how it is sold on eBay. It is available for purchase at auctions where bidders compete in a modified second-price scenario. In addition, it can be purchased immediately at BIN offers for $129.95 or $139.95, depending on the observation period. Moreover, you know how rational bidders should behave in this scenario and in the next exercise we are going to find out how they actually do.
+
+
+
+## Exercise 2 -- The Phenomenon of Overbidding
+
+As we have discussed before, overbidding in form of bidding more in an auction than the same item would cost in a BIN listing, is incomprehensible. However, this phenomenon is known in academic literature. There is evidence about large and persistent overbidding in second-price auctions, observed in laboratory studies (Cooper, D. J., & Fang, H. (2008)). In studies about bidding behaviour in English auctions, overbidding was also observed (Kagel, J. H., Harstad, R. M., & Levin, D. (1987)).
+In this exercise, we investigate if there is overbidding in our data of Cashflow 101 auctions and visualise how overbid auctions are distributed. For this purpose, we determine how many auctions are overpayed by how much. In doing so, we compare prices without respecting shipping costs to shipping included prices.
+Let us start with loading the Cashflow 101 data set again.
+
+Load the Cashflow data again. To do so, just press `edit` and `check` afterwards.
+```{r "2"}
+cf <- readRDS("cf.rds")
+```
+
+In our Cashflow data set, the column `overfinal` contains the amount that is payed to much compared to the buy-it-now finalprice (can be negative). Remember that `overfinal` ignores shipping costs and only compares the end price of the auction with the price of a buy-it-now offer available at the same time.
+Unfortunately, we have one row containing a "NA" value, probably because of a matching error to the BIN price. We need to cut it out though because otherwise it is counted as an observation later.
+
+info("Function: select()") # Run this line (Strg-Enter) to show info
+
+In order to visualise the problem, run the next code chunk. We select the columns `itemnumber` and `overfinal` of the Cashflow data set `cf` using the pipe operator. In addition, we only select rows containing NAs.
+
+Press `edit` and `check`.
+```{r "2__3"}
+cf %>%
+  select(itemnumber, overfinal) %>%
+  filter(is.na(overfinal)==TRUE)
+```
+
+Subsequently, we drop the erroneous data. This is done in the next task with the help of another package.
+The `tidyr` package is useful to make your data "tighter". The functions of this package can basically be used to clump or extend your data and complement the dplyr package when working with raw data sets. There are two functions of this package we are interested in: `complete()` and `drop_na()`.
+
+info("Functions: complete() and drop_na()") # Run this line (Strg-Enter) to show info
+
+**Task:** Use the pipe operator to select the columns `itemnumber` and `overfinal` of the data set `cf`, drop all rows containing NAs with the function `drop_na()`. After that, store the rest in the variable `rem.NA`.
+```{r "2__4"}
+library(tidyr)
+rem.NA <- cf %>%
+select(___) %>%
+___
+
+rem.NA
+
+```
+Now we have 166 auctions left to work with.
+
+We are going to produce breaks with a length of 5, ranging from -50 to 50. Then we mutate a new column `interval`, where we cut the overbidding amount `overfinal` on the basis of these breaks. This way we assign every auction to a level of overbidding. After that, count the number of auctions for every interval.
+
+info("Function: cut() and mutate()") # Run this line (Strg-Enter) to show info
+
+Press `edit` and `check` to run the code.
+
+**Note:** The command `complete(interval, fill = list(n = 0))` in the last line produces zeros if intervals contain no value (otherwise we get problems when trying to plot it).
+```{r "2__7",fig.width=7, fig.height=7}
+b <- c(seq(-50,50,5))
+overfin_int <- rem.NA %>%
+  mutate(interval = cut(rem.NA$overfinal, breaks=b)) %>%
+  group_by(interval) %>%
+  summarise(overfinal.n = n()) %>%
+  complete(interval, fill = list(overfinal.n = 0))
+
+tail(overfin_int)
+```
+As a result, we get the vector b which defines the breaks where we want to cut the intervals of overbidding amount. In the table `overfin_int` above we have counted how many auctions are overbid by how much. The worst deals are two games that go for 45-50 dollars more than the buy-it-now price.
+
+Press `edit` and `check` to do the same for the shipping-included prices of the variable `overtotal` which contains the amount that is overpaid with regard to shipping included prices.
+```{r "2__8"}
+overtot_int <- cf %>%
+  select(itemnumber, overtotal) %>%
+  drop_na() %>%
+  mutate(interval = cut(overtotal, breaks=b)) %>%
+  group_by(interval) %>%
+  summarise(overtotal.n = n()) %>%
+  complete(interval, fill = list(overtotal.n = 0))
+```
+
+Before we can plot our results with ggplot, we need to reshape our data into long format.
+Run the following code and take a quick look at the joined data frame we want to plot. Make use of the function `gather()` to combine our columns `overfinal.n` and `overtotal.n`.
+
+info("Function: gather()") # Run this line (Strg-Enter) to show info
+
+Press `edit` and `check` to create a combined data frame with overbid auctions per price interval.
+```{r "2__10"}
+cf_int <- overfin_int %>%
+  mutate(overtotal.n = overtot_int$overtotal.n) %>%
+  gather(type, n, overfinal.n:overtotal.n)
+
+cf_int
+```
+
+The column `interval` states the over-/underbid amount in steps of 5, ranging from -$50 to +$50. The `type` indicates, whether the absolute frequencies of overbidding `n` belong to final or total prices.
+
+The next code chunk creates a simple bar plot of this data.
+Just run the following code and get an overview of the overbidding phenomenon, I will explain the function used for the plot down below.
+
+Press `edit` and `check`.
+```{r "2__11",fig.width=11, fig.height=6}
+library(ggplot2)
+ggplot(cf_int, aes(x=interval ,y=n)) +
+  geom_bar(stat = "identity", aes(fill = type), position = "dodge") + ggtitle("Overbidding Amount") +
+xlab("Ranges of over-/underpayment") +
+ylab("Number of auctions")
+```
+
+info("Package: ggplot2") # Run this line (Strg-Enter) to show info
+
+As you can see, the number of overbid auctions is quite significant. This holds for shipping included prices (blue) as well as for prices without shipping costs (red). It seems that underpayment is more frequent for final prices. We know from Exercise 1 that BIN offers have lower shipping costs in general which can be the reason for reduced underpayment in total prices. As a result, overpayment is more frequent for total prices but only in the interval [$0, $5]. 
+For many items, shipping included or not, the prices paid are not just a few cents above the fix price but exceed it by $30 in 25% of all cases. Therefore, it is legitimate that we neglect the fixed increment. Even if eBay requires the winning bidder to pay an amount on top of the second last bid of $2.50 (increment for prices of $100-$249.99 (eBay (2019)), this cannot be the reason for the occurrence of overbidding.
+
+It has to be said though, that our sample size of 166 auctions is rather small, in particular when we divide the data into 20 intervals like this. You can see that there is no interval with more than 30 observations. As a result, we should be careful when interpreting these results.
+Nevertheless, it is clearly visible that overbidding is not a marginal phenomenon. In the next Exercise, we will focus on the amount of bidders who overbid and the number of overbids submitted. Then we will evaluate the influence of such behaviour.
+
+## Exercise 3 -- Disproportional Influence of Overbidders 
+In this exercise, we take a closer look at proportions: The shares of overbidders, overbids and overbid auctions. We investigate if there are really so many irrational bidders like it seems and how auctions are influenced by overbidding.
+
+We base this investigation on auctions for the Cashflow 101 board game. Besides the data set of 167 Cashflow auctions, we also have information about bids submitted for most of these auctions.
+The data set `bidhistory` contains 2353 single bids for 139 Cashflow games in its rows, sorted by the time the bid was placed.
+
+Press `edit` and `check` to load the `bidhistory` data set.
+```{r "3"}
+bidhistory <- readRDS("bidhistory.rds")
+```
+
+**Task:** Use the `head()` function to take a first look at the bidhistory.
+```{r "3__2"}
+head(___)
+
+```
+The first few rows show consecutive bids for the same item. This can be seen for example in the columns `itemnumber`, `winbidder` or `finalprice`. They all share the same values whenever they refer to the same auction. The main differences thought, are the columns `bidvalue`, `bidprice`, `biddername` and `leader`. As each row represents another bid, ordered by `biddate`, `bidprices` are increasing continuously until the auctions ends. The `bidprice` increases as soon as a bidder submits a higher bid. If this is the case, he becomes the new `leader`.
+
+The info box below specifies all variables in detail.
+info("Declaration of Variables - bidhistory") # Run this line (Strg-Enter) to show info
+
+First, we want to make the data set slimmer by only keeping one row per auction. As the variable `overfinal_d` flags an auction as (not) overbid, it is (FALSE) TRUE for every bid on this item.
+In order to strike out redundant rows, we could use the `unique()` function again. However, the dplyr package contains an useful alternative, called `distinct()`. It is less complicated to implement when it comes to unique combinations of variables and works within a dplyr chain.
+
+info("Function: distinct()") # Run this line (Strg-Enter) to show info
+
+**Task:** Use `distinct()` to only select rows with unique itemnumbers. Count the number of overbid auctions without shipping and mutate a column with the corresponding percentage value. Store all in the variable `influence.auction`.
+```{r "3__3"}
+influence.auction <- bidhistory %>%
+  distinct(___ , .keep_all = TRUE) %>%
+  count(___) %>%
+  mutate(percentage = n/sum(n))
+
+influence.auction
+
+```
+We count 60 overbid auctions which is almost half of our data.
+Because a colored plot is much nicer to look at than such a table, we make use of `ggplot()` again. In addition, we compare the proportion of overbid auctions to the amount of overbidders and overbids.
+
+Use the code below to plot three simple pie plots, showing the relations of overbid auctions, overbidders and the relation of exceeding bids as well.
+Press `edit` and `check`.
+
+```{r "3__4",fig.width=5, fig.height=10}
+# define pie1
+
+pie1 <- ggplot(influence.auction, aes(x="", y=percentage, fill=as.logical(auction.overfinal_d)))+
+    geom_bar(width = 1, stat = "identity") + 
+    coord_polar("y", start=0)+
+    theme_void()+
+    geom_text(aes(label=percent(percentage)), position = position_stack(vjust=0.5))+
+    labs(fill="overbid", title="Does the auction end up overbid?") +
+  scale_fill_brewer(palette="Paired")
+
+# calculate data for pie2
+influence.bidder <- bidhistory %>%
+  group_by(biddername) %>%
+  summarise("bid.overfinal"= max(bid.overfinal==1)) %>%
+  count(bid.overfinal) %>%
+  mutate(percentage = n/sum(n))
+
+# define pie2
+pie2 <- ggplot(influence.bidder, aes(x="", y=percentage, fill=as.logical(bid.overfinal)))+
+  geom_bar(width = 1, stat = "identity") + 
+  coord_polar("y", start=0)+
+  theme_void()+
+  geom_text(aes(label=percent(percentage)), position = position_stack(vjust=0.5))+
+  labs(fill="overbid", title="Does the bidder ever overbid?")+
+  scale_fill_brewer(palette="Spectral")
+
+# calculate data for pie3
+influence.bid <- bidhistory %>%
+  count(bid.overfinal) %>%
+  mutate(percentage = n/sum(n))
+  
+# define pie3
+pie3 <- ggplot(influence.bid, aes(x="", y=percentage, fill=as.logical(bid.overfinal)))+
+  geom_bar(width = 1, stat = "identity") + 
+  coord_polar("y", start=0)+
+  theme_void()+
+  geom_text(aes(label=percent(percentage)), position = position_stack(vjust=0.5))+
+  labs(fill="overbid", title="Is the bid an overbid?")+
+  scale_fill_brewer(palette="PuRd")
+
+# plot pie charts
+library(gridExtra)
+grid.arrange(pie1, pie2, pie3, ncol=1)
+
+```
+We observe an amount of 43.2% of overbid auctions but the share of bidders who ever submit an overbid is only 17%. The share of bids that actually are overbids is even smaller, only 10.6%.
+A clear conclusion is that a high frequency of overbid auctions of 43.2% does not necessarily mean that the "typical" buyer pays too much. Instead, overbid auctions are generated by a relative small number of overbids.
+In summary, it can be said that a small amount of bidders with few overbids have a disproportional influence on the auctions' outcome. This is the nature of auctions of course.
+We proceed with our investigation in the next exercise. This time we will test whether our findings also apply for other items than the Cashflow 101 game. 
+
+
+
+## Exercise 4 -- Overbidding at Various Products
+
+In this exercise, we want to show that the phenomenon of overbidding is not restricted to a single item like the Cashflow 101 game but is also observable for other items. For this purpose, we use data of 94 various products like books, consumer electronics or cosmetics.
+If you want to know what items we are talking about in particular, you can take a look at the following info box. It shows a detailed list of all items for which we have data available. For our investigations however, we will use a different data set containing 1886 auctions for these products. The data set `dat` has one row for each auction, just like the Cashflow data set. `dat` is loaded below, so you can skip this info box without coming to harm.
+
+info("Various products - Full Item List") # Run this line (Strg-Enter) to show info
+
+Let us import the data set `dat`. It contains 1886 auctions from Feb, April and May 2007, downloaded from eBay by using the advanced search for finished auctions.
+The variables of this data set are the same as for the Cashflow game with one exception: The overbidding amount is not given in USD this time but represent percentage values of the BIN price (`overfinal_percent`). It is calculated as `(finalprice - BIN.final) / BIN.final`.
+A value of 40% for example tells us that the corresponding BIN price is exceeded by 40%. Like before, this value can be negative (underpayment).
+
+Load the data. To do so, just press `edit` and `check` afterwards.
+```{r "4"}
+dat <- readRDS("dat.rds")
+```
+
+info("Function: top_n()") # Run this line (Strg-Enter) to show info
+
+**Task:** Give yourself a short overview of the new data set of auctions.
+To do so, use the `top_n()` function and select the top 5 most expensive items.
+
+**Note:** use the argument `wt`=`finalprice`.
+```{r "4__3"}
+library(dplyr)
+___
+
+```
+
+If you are interested in a detailed explanation of the variables used in the data set, please check the info box:
+
+info("Declaration of Variables - dat") # Run this line (Strg-Enter) to show info
+
+We would like to know, whether overbidding is restricted to certain item types. Therefore, the first step is to list all item types that are available.
+
+**Task:** List up all item types of our data frame, accessible by `$itemtype`. There are 12 different groups in total. Make use of the `unique()` function again from last exercise to filter out duplicates.
+```{r "4__4"}
+___
+
+```
+
+### Quiz 2: Most Overpayed Item Type
+#! addon__quiz__Most Overpayed Item Type
+
+Run the following code and take a look at the summary.
+Press `edit` and `check`.
+```{r "4__5"}
+overbidding_categories <- dat %>%
+  rename("Itemtype"="itemtype") %>%
+  group_by(Itemtype) %>%
+  summarise("Observations"=  length(overfinal_percent),
+            "Mean [Share of BIN]" = mean(overfinal_percent, na.rm = TRUE),
+            "Overbids" = length(which(overfinal_d==1)),
+            "Overbid_frequency" = length(which(overfinal_d==1))/length(overfinal_d)) %>%
+  ungroup() %>%
+  
+  # add line with all types
+  rbind(list("all types",
+             length(dat$overfinal_percent),
+             mean(dat$overfinal_percent, na.rm = TRUE),
+             length(which(dat$overfinal_d==1)),
+             length(which(dat$overfinal_d==1))/length(dat$overfinal_d))) %>%
+  arrange(Itemtype)
+
+# plot summary and round numbers for better readability
+overbidding_categories %>%
+  mutate_at(2:5,funs(round(.,digits=3)))
+  
+```
+
+We have got 1886 observations: completed auctions of items from different categories. The mean tells us by how much the auction price exceeds the respective BIN offer on average. The column `Overbids` counts all overbid auctions while `Overbid_frequency` presents this amount by a proportion of all observations.
+For example, sports equipment gets overbid in 56.4% of all cases and if it is an overbid, the buyer pays 50.2% more than the BIN price.
+Interestingly, books have the highest overbid frequency among all items.
+
+
+Now it is time to create your first own plot.
+
+**Task:** Use ggplot to visualize the overbid frequency per item type in a bar plot. Use the `geom_bar` for it.
+
+**Note:** The parameter `+theme(axis.text.x = element_text(angle = 45, hjust = 1))` is used to turn the labels by 45°.
+```{r "4__6",fig.width=8}
+
+library(ggplot2)
+ggplot(___, aes(___))+
+geom_bar(stat = "identity")+
+labs(fill="overbid", title="Overbidding by Item Iype -- Finalprice (Without Shipping)")+
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+
+
+Here we have plotted the overbid frequencies again for a better visual comparison. We should not overstate these results however, because the number of observations we have from each item category is vastly different. Incidentally, this is why we have no bar for automotive products. Simply none of the nine auctions is overbid.
+What we can observe in fact is that overbidding is not just a marginal phenomenon, restricted to some item categories. In almost all categories, we find an overbid frequency of at least 24%. Automotive products are the neglectable exception here due to the small number of observations. 
+
+Finally, over all categories combined, we notice a huge amount of 48% irrational overpayment. Furthermore, it seems that overbidding is quite common and not limited to single item types.
+
+Note that we only used final prices so far. However, in order to avoid repeating the same calculations again, I can just tell you that the results for shipping included prices are very similar with a little less overbidding in each item category. The total overbid frequency of all item types combined is 40.1%.
+If you are interested in more details, please open the info box below. It contains runnable code which displays the corresponding table and bar plot.
+
+#! start_note "Info: Overbidding by Item Type -- Totalprice (with Shipping)"
+
+Press `edit` and `check` to display the table and bar plot for **total prices**.
+
+**Note:** This will take some time to run.
+```{r "4__7",optional=TRUE, fig.width=8}
+# load data with total prices
+overbidding_categories2 <- readRDS("overbidding_categories2.rds")
+
+# show the table
+grid.table(overbidding_categories2 %>%
+           mutate_at(2:5,funs(round(.,digits=3))), rows = NULL)
+
+# plot the result
+ggplot(overbidding_categories2, aes(Itemtype, Overbid_frequency))+
+  geom_bar(stat = "identity")+
+  labs(fill="overbid", title="Overbidding by Item Type -- Totalprice (With Shipping)")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+#! end_note
+
+## Exercise 5 (Excursus) -- Hypothesis: Overbidding is Significant on Averages
+
+The question whether overbidding at certain item groups is significant is not part of the paper, nor does it belong to the key issue. However, it is still worth investigating as one might find it interesting to see that the average amount overbid is significantly different from zero. Therefore, we aim to verify this hypothesis in form of an excursus.
+From the point of view of rational bidding behaviour, one might think that the amount of overbidding is **at most** 0. In the following section we test based on an even harder restriction: the null hypothesis that the amount of overbidding is 0 **on average**.
+We talk about statistical significance when it is very unlikely that the observed result occurred under the null hypothesis so that it can be rejected.
+
+We begin with testing the final prices of our Cashflow game and want to reject the hypothesis that the mean of overbid amount without shipping costs is 0:
+
+$$H_0: \mu_{overfinal} = 0$$
+
+First, we build a confidence interval for the amount overbid without shipping `overfinal`. These intervals have the following form:
+
+$$[\bar{X}_l , \bar{X}_u]$$
+
+$x_l$ is the lower bound, $x_u$ the upper bound. We determine the bounds of our confidence interval such that the probability for the mean of our sample $\bar{X}$ being inside the interval is:
+
+$$P(\bar{X}_l \le \bar{X} \le \bar{X}_u) = 1-\alpha$$
+
+Based on the assumption that the overbid amount is normally distributed, our confidence interval is calculated as follows:
+
+$$[\bar{X} - z_{(1-\frac{\alpha}{2})} \cdot  \frac{\sigma}{\sqrt{n}} , \bar{X} + z_{(1-\frac{\alpha}{2})} \cdot  \frac{\sigma}{\sqrt{n}} \bar{X}]$$
+
+, where $z_{(1-\frac{\alpha}{2})}$ denotes the $(1-\frac{\alpha}{2})$ quantile of the standard normal distribution while $\sigma$ is the standard deviation of the overbid amount for our sample size $n$.
+
+
+**Step 1:** Load the Cashflow 101 data set. To do so, just press `edit` and `check` afterwards.
+```{r "5__Excursus_"}
+cf <- readRDS("cf.rds")
+```
+
+**Step 2:** **Task:** Calculate the number of observations and the `mean` of the variable `overfinal`. In addition, calculate the standard deviation `SD` as well as the standard error `SE` of that variable. Summarise all in the data frame `overpayment_final`.
+Remember from Exercise 1 that we have one row containing a 'NA' value, probably because of a matching error to the BIN price. Find a way to work around it in the data set.
+
+**Note:** Use the argument `na.rm=TRUE` in your functions.
+```{r "5__Excursus___2"}
+overpayment_final <- summarise(cf,
+                          Observations = ___(which(!is.na(overfinal))),
+                          Mean = mean(overfinal, ___ ),
+                          SD = sd(overfinal, ___ ),
+                          SE=(SD/sqrt(Observations)))
+
+overpayment_final
+
+```
+
+**Step 3:** **Task:** Calculate the bounds of the 95% confidence interval `Xl` and `Xu` and add them as columns to our data frame.
+Use the given a and z as well as the formula for confidence intervals.
+```{r "5__Excursus___3"}
+a <- 0.05
+z <- qnorm(1-a/2)
+
+overpayment_final <- overpayment_final %>%
+  mutate(Xl = ___) %>%
+  mutate(Xu = ___)
+
+overpayment_final
+
+```
+
+In order do decide whether or not the positive mean of the overbidding amount is significant, we test the null hypothesis.
+If the value `overfinal = 0` lies outside of our confidence interval, we can reject the null hypothesis at the significance level `a` and conclude that overbidding on average is not just a random observation.
+
+**Step 4:** **Task:** Check whether 0 lies outside the interval `[Xl, Xu]`. The function `between(x, left, right)` provides a logical value after checking if the zero lies between two bounds.
+```{r "5__Excursus___4"}
+between(___)
+
+```
+
+As 0 lies within our confidence interval, we cannot reject the null hypothesis and therefore cannot call the phenomenon of overbidding significant at the 5% level (for the Cashflow 101 game without shipping costs).
+Note that we cannot conclude the opposite. This does not necessarily mean that overbidding for this item is not significant at all, it might be significant at a different level.
+
+Press `edit` and `check` to do the same evaluation for total prices of Cashflow 101 as well as for all other items in the data set of various products. You will receive all tables listed under each other.
+```{r "5__Excursus___5",fig.width=14, fig.height=6}
+overpayment_cf <- readRDS("overpayment_cf.rds")
+overpayment_various <- readRDS("overpayment_various.rds")
+
+overpayment_cf
+filter(overpayment_various, `Comparison price` == "final")
+filter(overpayment_various, `Comparison price` == "total")
+```
+As we can see, overbidding is not significant at the 5% level for some item types. Furthermore, auction prices can be significantly lower than the BIN price.
+For all product types of various products combined however, auction prices are significantly higher than the fix price.
+The same holds for the Cashflow 101 board game, but only if we consider shipping costs.
+
+Now that we know that overbidding is not only pretty common but also significant for some item types, we are going to investigate possible factors that cause such behaviour in the next exercise.
+
+
+
+## Exercise 6 -- Possible Factors Influencing Overbidding
+In this exercise, we will do some evaluations and try to find out, where the phenomenon of overbidding comes from. For this purpose, we will examine some factors that might be correlated with overbids and set up the following four theses:
+
+- Thesis 1 - Experienced bidders overbid less.
+- Thesis 2 - Bidders who participate longer in auctions as lead bidder overbid more.
+- Thesis 3 - Overbidding is caused by certain demographic groups.
+- Thesis 4 - Overbidding only appears at items of a certain price level.
+
+Thesis 1 and 2 test for **Cashflow games**, whether the level of experience or the participation length at an auction is causing bidders to submit an overbid.
+Thesis 3 and 4 are based on the **various products** data set. We will divide this data into demographic groups using item information and price levels based on final auction prices.
+We only consider overbids based on final prices (without shipping). This way, we exclude overbids due to low awareness of different shipping costs. 
+
+### Thesis 1: Overbidding by Experience
+
+Our first thesis is that experienced bidders know better about eBay's auctions and fixed price offers and know better how to navigate between them.
+
+We measure the experience someone has in being a buyer on the basis of his amount of feedback. Every bidder on eBay receives feedback for former transactions by the respective counterparty. The variable `buyernumfeedback` contains the amount of feedback the bidder has at the time he places his bid. Having a large amount of feedback indicates that this account has bought or sold many items on eBay. We suppose that these people overbid less than unexperienced eBay members.
+We take the variable `buyernumfeedback` out of a modified version of the **Cashflow 101 data set**: `cf_short`. It contains only relevant variables for this task to reduce the running time of the code.
+
+Start with loading the first data set `cf` and downsize the number of variables. To do so just, press `edit` and `check` afterwards.
+```{r "6"}
+cf_short <- readRDS("cf.rds")  %>%
+  select(itemnumber, winbidder, buyernumfeedback, overfinal_d)
+```
+In the next step, we want to divide our data into two equally sized groups: experienced bidders and rather unexperienced. For this purpose, we compute the middle of our data: the median.
+
+**Task:** Compute the median of `buyernumfeedback` in the data set `cf_short`.
+
+**Note:** Use the `$` sign to refer to that variable.
+```{r "6__2"}
+___
+
+```
+
+Now we form two groups of `buyernumfeedback`: **larger** than the median and **below or equal to** the median. This way, we make sure to split our data in the middle and obtain two equally sized groups, hence we can compare the overbid frequencies without being biased by different sample sizes. 
+
+**Task:** Use a dplyr chain to group the Cashflow data by the variable `buyernumfeedback`. Differentiate between **> median** and **<= median**. summarise the number of observations and the overbid frequency.
+
+**Note:** For the median, use the number you calculated above, not a variable.
+```{r "6__3"}
+overbid_by_exp <- cf_short%>%
+  drop_na() %>%
+  ___ %>%
+  summarise(n = ___,Overbid_freq = ___)
+
+overbid_by_exp
+
+```
+
+**Task:** Use a `geom_bar` to plot your results.
+```{r "6__4"}
+#...
+```
+
+After you have done that, it should look like the plot below, basically showing no difference in overbid frequencies depending on the number of buyer feedback. 
+
+![Ex.5-barplot](Ex.5-barplot.png)
+
+The measurement of experience is imperfect since some eBay users do not leave feedback. Therefore, the number of feedback does not match the number of past transactions. However, our measure is sufficient to reject the hypothesis that only unexperienced bidders overbid as users with a high amount of feedback have at least the same amount of finished transactions. The number of auctions the bidder participated in without winning them might be much higher.
+
+It seems that significant experience does not help bidders to learn how to bid more optimal. This is consistent with Garratt, R. J. et al.(2012) who also find the same amount of overbidding behaviour in eBay auctions for novices and experienced bidders.
+
+### Thesis 2: Utility from Winning - Overbidding and Participation Length at Auctions
+
+In the following, we want to consider the quasi-endowment effect as one possible explanation for overbidding, that is evaluating goods higher if someone "quasi" possesses it. Quasi-endowment is a sense of ownership that bidders get during the auction, it causes an effect of weighting a loss from losing an item (by losing the auction) higher than the utility gained from getting another item of the same type. In other words: Bidders might be willing to pay more for the same item if they are the lead bidder and therefore in quasi-possession. This effect should become stronger as the lead time increases.
+Academic studies suggest that bidders are affected by the endowment effect when participating in auctions (Wolf, J. R., et al.(2005), Heyman, J. E. et al. (2004)).
+Even though it is questionable whether this effect can explain bidding above the BIN price, we are going to test whether bidders are more likely to overbid in an auction when they participate longer, in particular as the lead bidder.
+
+Let us start with the data set of our `bidhistory`, containing all bids for the **Cashflow 101 game**. In our first analysis we want to filter out auction winners and take their first bid per auction. Then we can summarise for (non-) overbid auctions how much time is left until the auction ends when bidders first enter it.
+The variable `timeleft_days` suits our needs. It indicates how many days are left for the auction to go when the bid was placed. On the basis of the variable `overbid` we can separate our bidders into overbidders and non-overbidders.
+Note that we have got one item in our data set where bidder names were not accessible. Hence we have only 138 observations of auction winners where we can make statements about their participation length.
+
+**Task:** Complete the code to summarise the mean of auction time left for overbidders and non-overbidders. Include the number of observations in the summary.
+```{r "6__5"}
+bidhistory <- readRDS("bidhistory.rds")
+
+bidhistory %>%
+  filter(biddername!="") %>%
+  filter(biddername==winbidder) %>% # filter for only winners
+  distinct(itemnumber, biddername, .keep_all = TRUE) %>% # take only first bids
+  group_by(overbid) %>%
+  summarise("time left [days]"=mean(timeleft_days),"observations" = length(itemnumber)) %>%
+  mutate_at(2,funs(round(.,digits=3)))
+
+```
+A simple comparison of overbid frequencies does not match our assumption: Winners who do not overbid enter the auction on average 1.46 days before the auction ends. 
+Winners who do overbid enter the auction later and therefore participate shorter, on average 1.27 days before auction end.
+
+In our second analysis we want to take a look at the total time a bidder is the lead bidder and if we see a possible relation to overbidding.
+At the start, we need to filter out lead bids. This way, we can calculate the `leadtime` [in days] as the time from a leadbid to the next leadbid (from a different bidder).
+After that we can again filter for winners and summarise their total lead time per auction.
+
+Press `edit` and `check` to calculate the mean of total lead time for overbidders and non-overbidders.
+```{r "6__6"}
+bidhistory %>%
+  filter(biddername!="") %>%
+  filter(biddername==leader) %>%
+  group_by(itemnumber) %>%
+  
+  # group by each item, compute time between bids and if its the last bid ('default=' case), then take the remaining auction time
+  
+  mutate(leadtime = (lead(biddate, default = first(enddate)) - biddate)/ddays(1)) %>%
+  
+  # when subtracting dates, the resulting period is given in seconds. Thats why we convert it into days
+  # take only one bid per bidder and auction, compute the total lead time.
+  
+  group_by(itemnumber, biddername) %>%
+  mutate(totalleadtime_in_days = sum(leadtime, na.rm = TRUE)) %>%
+  distinct(itemnumber, biddername, .keep_all = TRUE) %>%
+  ungroup() %>%
+  
+  # take only winning bidders
+  
+  filter(biddername==winbidder) %>%  
+  group_by(overbid) %>%
+  summarise("total leadtime [days]" = mean(totalleadtime_in_days, na.rm=TRUE),"observations" = length(itemnumber)) %>%
+  mutate_at(2,funs(round(.,digits=3)))
+```
+
+info("Functions: lead() and lag()") # Run this line (Strg-Enter) to show info
+
+We find the same pattern for the time beeing the lead bidder: Winners who overbid are lead bidders for 1.03 days on average by the end of the auction. Winners who do not overbid are lead bidders for 1.24 days.
+
+### Thesis 3: Overbidding by Demographic Group
+There is a large literature on different consumer behaviour in online auctions depending on demographics like age, gender or education level (Yeh, J. C. et al. (2012)). Even bidders from different local regions of the USA tend to behave differently (Black, G. S. (2007)).
+In this section, we want to study if there is different bidding behaviour in our data when it comes to overbidding. We check whether some demographic groups tend to overbid more than others.
+In the **data set of various products** `dat`, which contains many different items, we have some binary variables for gender, age and political conviction. These variables are associated with the winner of the auction. Combinations like "female and adult" are possible. However, not all items can be categorised, thus sample sizes differ across the demographic variables.
+Because bidder demographics are not directly observable by the listing of an eBay auction, items have been categorised based on an assumption. The original authors **estimate** these variables based on an indication like "usually bought by a certain consumer group". For example, perfume brands indicate the gender of the buyer and PlayStation controllers are associated with teenagers. (Malmendier, U., & Lee, Y. H. (2011)).
+If you want to know how every item is categorised, please take a look at the info box "Various products - Full item list" at the beginning of Exercise 2 when the data set `dat` was introduced.
+
+Load the data set `dat`. To do so just press `edit` and `check` afterwards.
+```{r "6__11"}
+dat <- readRDS("dat.rds")
+```
+
+info("sample_n()") # Run this line (Strg-Enter) to show info
+
+**Task:** Take a look at 5 random rows of the data using `sample_n()`.
+```{r "6__13"}
+sample_n(___)
+
+```
+
+**Task:** Use the code chunk below and do whatever is necessary to answer the following questions. Use all items in the dataset and aim for the binary variable for overbidding without shipping costs `overfinal_d`.
+Be aware, that you will face some NA values. Remove them with `drop_na()`, `filter(!is.na())` or the parameter `na.rm=TRUE` for the `mean()` or `sum()` function.
+
+```{r "6__14"}
+#...
+```
+
+### Quiz 3: Overbidding by Demographic Group
+
+#! addon__quiz__Overbidding by Demographic Group
+
+
+Now it is time to look at the results.
+Press `edit` and `check` to plot the overbid frequencies by demographic group:
+```{r "6__15",fig.width=11, fig.height=5}
+consumer_dat <- dat %>%
+  select("gender", "age", "political", "overfinal_d")
+p_names <- c("Group","Overbid_frequency")
+
+# calculate data for plots
+
+c1 <- consumer_dat %>%
+  group_by(gender) %>%
+  summarise(mean(overfinal_d)) %>%
+  drop_na()
+colnames(c1) <- p_names
+c2 <- consumer_dat %>%
+  group_by(age) %>%
+  summarise(mean(overfinal_d)) %>%
+  drop_na()
+colnames(c2) <- p_names
+c3 <- consumer_dat %>%
+  group_by(political) %>%
+  summarise(mean(overfinal_d)) %>%
+  drop_na()
+colnames(c3) <- p_names
+
+# define bar plots
+
+library(ggplot2)
+bar1 <- ggplot(c1, aes(Group, Overbid_frequency))+
+  geom_bar(stat = "identity")+
+  ggtitle("Overbidding by Gender")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  ylim(0,1)
+bar2 <- ggplot(c2, aes(Group, Overbid_frequency))+
+  geom_bar(stat = "identity")+
+  ggtitle("Overbidding by Age")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  ylim(0,1)
+bar3 <- ggplot(c3, aes(Group, Overbid_frequency))+
+  geom_bar(stat = "identity")+
+  ggtitle("Overbidding by Political Conviction")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  ylim(0,1)
+
+# arrange plots next to each other
+
+library(gridExtra)
+grid.arrange(bar1, bar2, bar3, ncol=3)
+```
+
+Basically, there is a significant amount of overbidding in each demographic subset. Therefore, no demographic group seems to be particularly vulnerable to the irrational phenomenon of overbidding.
+
+### Thesis 4: Overbidding by Price Levels
+
+In the last part, we take a closer look at the price categories. Intuitively, one could think that buyers of low value items are more price sensitive and therefore overbid less. We want to test, whether these items are less likely to end up overbid then high value items.
+In the following section, we will group all items from the **data set of various products** by price ranges in order to check whether the amount of overbidding is correlated with the price level.
+At first, we will do this for all item types together. After that, we will consider each item type separately.
+
+Press `edit` and `check` to cut the data set into price intervals and count overbid auctions for each price level.
+```{r "6__16"}
+library(tidyr)
+
+# define price levels and n
+
+pricelevel <- seq(0,250,10)
+n <- length(dat$overfinal_d)
+
+# calculate data frame with overbid frequencies for each interval
+
+overbid_pricelevel_all <- dat %>%
+  group_by(pricelevel=cut(BIN.final, breaks = pricelevel))%>%
+  mutate(observations = n()) %>%
+  complete(pricelevel, fill = list(observations = 0)) %>%
+  mutate(overbid_freq = mean(overfinal_d)) %>%
+  select(pricelevel, observations, overbid_freq) %>%
+  arrange(pricelevel)  %>%
+  complete(pricelevel, fill = list(overbid_freq = 0)) %>%
+  ungroup() %>%
+  distinct(pricelevel, .keep_all = TRUE ) %>%
+  drop_na()
+
+# show 10 random rows of the data frame
+
+sample_n(overbid_pricelevel_all %>%
+             mutate_at(3,funs(round(.,digits=3)))
+         ,10)
+```
+
+
+Press `edit` and `check` to plot your results.
+```{r "6__17",fig.width=10, fig.height=4}
+library(ggplot2)
+overbid_pricelevel_all <- overbid_pricelevel_all %>%
+  mutate(price =rep(seq(10,250,10))) %>%
+  mutate(l = paste(overbid_freq*observations, "/", observations)) # define lables
+
+# plot price levels for all types
+
+ggplot(overbid_pricelevel_all, aes(x = price, y = overbid_freq))+
+  geom_bar(stat = "identity", fill="dodgerblue1")+
+  geom_text(size=3,aes(label=l), position=position_dodge(width=0.9), vjust=-0.25)+
+  ylim(0,1) +
+  labs(title="All Item Types", x="price level [$]", y="overbid frequency")
+```
+Here we can see the overbid frequency for each price range on the basis of the bar height. The numbers above each bar tell you how many items receive an overbid in this price range and how many observations we have. For example, there are 347 out of 494 items overbid in the lowest price category ($0-$10).
+Be careful with interpreting bar heights of price ranges with very few observations, they might not allow a robust conclusion as possible outliers among these auctions have a higher weight.
+Please note that there are a few items missing so that we only have 1778 out of 1886 observations. This is simply the case because we plot only prices up to $250 in order to avoid a cluttered, space-consuming graphic.
+
+The following two code chunks will count the frequency of overbids by price level for each item type separately and then plot the result.
+
+Press `edit` and `check`.
+```{r "6__18"}
+
+# define price levels and n
+
+pricelevel <- seq(0,250,10)
+n <- length(dat$overfinal_d)
+overbid_pricelevel <- dat %>%
+  group_by(itemtype, pricelevel=cut(BIN.final, breaks = pricelevel))%>%
+  mutate(observations = n()) %>%
+  complete(pricelevel, fill = list(observations = 0)) %>%
+  mutate(overbid_freq = mean(overfinal_d)) %>%
+  select(pricelevel, itemtype, observations, overbid_freq) %>%
+  arrange(itemtype)  %>%
+  complete(pricelevel, fill = list(overbid_freq = 0)) %>%
+  ungroup() %>%
+  distinct(itemtype, pricelevel, .keep_all = TRUE ) %>%
+  drop_na()
+
+# show iterim results
+
+sample_n(overbid_pricelevel %>%
+             mutate_at(4,funs(round(.,digits=3))) , 10)
+```
+Do not be confused if you see a lot of zeros in this random sample. For some item types, there are no observations at certain price categories and consequently no overbids.
+
+Press `edit` and `check` to see the overbid frequency over all item categories. **This might take more time than usual**.
+```{r "6__19",fig.width=20, fig.height=24}
+overbid_pricelevel <- overbid_pricelevel %>%
+  mutate(price =rep(seq(10,250,10),12)) %>%
+  mutate(l = paste(overbid_freq*observations, "/", observations)) # define lables
+
+# create bar plots
+
+p1 <- ggplot(filter(overbid_pricelevel, itemtype=="automotive_products") , aes(x = price, y = overbid_freq))+
+  geom_bar(stat = "identity", fill="dodgerblue1")+
+  geom_text(size=3,aes(label=l), position=position_dodge(width=0.9), vjust=-0.25)+
+  ylim(0,1) +
+  labs(title="Automotive products (n=9)", x="price level [$]", y="overbid frequency")
+p2 <- ggplot(filter(overbid_pricelevel, itemtype=="books") , aes(x = price, y = overbid_freq))+
+  geom_bar(stat = "identity", fill="dodgerblue1")+
+  geom_text(size=3,aes(label=l), position=position_dodge(width=0.9), vjust=-0.25)+
+  ylim(0,1) +
+  labs(title="Books (n=398)", x="price level [$]", y="overbid frequency")
+p3 <- ggplot(filter(overbid_pricelevel, itemtype=="computer_hardware") , aes(x = price, y = overbid_freq))+
+  geom_bar(stat = "identity", fill="dodgerblue1")+
+  geom_text(size=3,aes(label=l), position=position_dodge(width=0.9), vjust=-0.25)+
+  ylim(0,1) +
+  labs(title="Computer & Hardware (n=186)", x="price level [$]", y="overbid frequency")
+p4 <- ggplot(filter(overbid_pricelevel, itemtype=="consumer_electronics") , aes(x = price, y = overbid_freq))+
+  geom_bar(stat = "identity", fill="dodgerblue1")+
+  geom_text(size=3,aes(label=l), position=position_dodge(width=0.9), vjust=-0.25)+
+  ylim(0,1) +
+  labs(title="Consumer electronics (n=332)", x="price level [$]", y="overbid frequency")
+p5 <- ggplot(filter(overbid_pricelevel, itemtype=="cosmetics") , aes(x = price, y = overbid_freq))+
+  geom_bar(stat = "identity", fill="dodgerblue1")+
+  geom_text(size=3,aes(label=l), position=position_dodge(width=0.9), vjust=-0.25)+
+  ylim(0,1) +
+  labs(title="Cosmetics (n=21)", x="price level [$]", y="overbid frequency")
+p6 <- ggplot(filter(overbid_pricelevel, itemtype=="dvds") , aes(x = price, y = overbid_freq))+
+  geom_bar(stat = "identity", fill="dodgerblue1")+
+  geom_text(size=3,aes(label=l), position=position_dodge(width=0.9), vjust=-0.25)+
+  ylim(0,1) +
+  labs(title="DVDs (n=74)", x="price level [$]", y="overbid frequency")
+p7 <- ggplot(filter(overbid_pricelevel, itemtype=="financial_software") , aes(x = price, y = overbid_freq))+
+  geom_bar(stat = "identity", fill="dodgerblue1")+
+  geom_text(size=3,aes(label=l), position=position_dodge(width=0.9), vjust=-0.25)+
+  ylim(0,1) +
+  labs(title="Financial software (n=151)", x="price level [$]", y="overbid frequency")
+p8 <- ggplot(filter(overbid_pricelevel, itemtype=="home_products") , aes(x = price, y = overbid_freq))+
+  geom_bar(stat = "identity", fill="dodgerblue1")+
+  geom_text(size=3,aes(label=l), position=position_dodge(width=0.9), vjust=-0.25)+
+  ylim(0,1) +
+  labs(title="Home products (n=29)", x="price level [$]", y="overbid frequency")
+p9 <- ggplot(filter(overbid_pricelevel, itemtype=="perfume_cologne") , aes(x = price, y = overbid_freq))+
+  geom_bar(stat = "identity", fill="dodgerblue1")+
+  geom_text(size=3,aes(label=l), position=position_dodge(width=0.9), vjust=-0.25)+
+  ylim(0,1) +
+  labs(title="Perfume (n=77)", x="price level [$]", y="overbid frequency")
+p10 <- ggplot(filter(overbid_pricelevel, itemtype=="personal_care_products") , aes(x = price, y = overbid_freq))+
+  geom_bar(stat = "identity", fill="dodgerblue1")+
+  geom_text(size=3,aes(label=l), position=position_dodge(width=0.9), vjust=-0.25)+
+  ylim(0,1) +
+  labs(title="Personal care products (n=282)", x="price level [$]", y="overbid frequency")
+p11 <- ggplot(filter(overbid_pricelevel, itemtype=="sports_equipment") , aes(x = price, y = overbid_freq))+
+  geom_bar(stat = "identity", fill="dodgerblue1")+
+  geom_text(size=3,aes(label=l), position=position_dodge(width=0.9), vjust=-0.25)+
+  ylim(0,1) +
+  labs(title="Sports equipment (n=55)", x="price level [$]", y="overbid frequency")
+p12 <- ggplot(filter(overbid_pricelevel, itemtype=="toys_games") , aes(x = price, y = overbid_freq))+
+  geom_bar(stat = "identity", fill="dodgerblue1")+
+  geom_text(size=3,aes(label=l), position=position_dodge(width=0.9), vjust=-0.25)+
+  ylim(0,1) +
+  labs(title="Toys and Games (n=164)", x="price level [$]", y="overbid frequency")
+
+# arrange plots next to each other
+
+grid.arrange(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, ncol=2, nrow=6)
+
+```
+Again, the height of each bar shows the overbid frequency. The numbers above each bar indicate how many items receive an overbid in this specific price range and how many observations we have.
+All in all, we observe no correlation between expensiveness and overbid frequency.
+
+
+Summarizing our previous findings, we conclude that we find no evidence for any of these theses. However, a simple comparison of means is not conclusive. We can assume relations but we do not know how large and significant these effects are.
+We will take a look into the field of regression analysis in the next exercise and try to find a better explanation for the overbidding phenomenon.
+
+## Exercise 7 -- Regression Analysis
+In this exercise, we are going to model a probit regression in order to predict the probability that a bidder overbids based on his behaviour. More specifically, we are interested in the effect of leadtime. In the last exercise, we took a brief look at the relationship between overbidding and total leadtime (Thesis 2). Although the comparison of means does not indicate a positive relation between leadtime and overbidding behaviour, we want to test this thesis with a model that is more accurate.
+
+At first, we need to find an appropriate model. An auction can be overbid or not, therefore, it makes sense to express that behaviour through the binary variable `overbid` which can be either 1 or 0 and predict a probability for overbidding. Linear regressions are most common but not suited for us. The predicted result `Y` can exceed our range from 0 to 1 and they can express an overbid of 0.5 for example which is hard to interpret because an auction cannot be overbid by "some degree".
+Linear regressions are not capable of predicting probabilities.
+Therefore the method of choice is a probit regression. It models a non-linear probability score that reflects the probability of occurrence of an event.
+(Le, J. (2018))
+
+### The Model
+We want to set up a regression framework where we can test whether the time a bidder spends as the leader affects overbidding conditional on being outbid. We only consider bidders which are not the winners and check for each auction, whether they ever overbid (`overbid = 1`) or not (`overbid = 0`). We also control for the value of the bidder's last lead bid, as well as the time and price outstanding when the bidder is outbid for the last time.
+
+We set up the following probit model where, we can test how a set of parameters influences the probability that a bidder overbids the auction. This probability is given by:
+
+$$
+p = \mathbb{P}(overbid=1|x) = F(x, \beta) = \Phi(\beta^T \cdot x) = \frac{1}{\sqrt{2\pi }} \int_{-\propto }^{\beta^T \cdot x} exp(-\frac{1}{2} {t}^2) dt
+$$
+
+with $\Phi(\beta^T \cdot x)$ denoting the cumulative distribution function (CDF) of the standard normal distribution for a set of explanatory variables $x$ and their respective weights $\beta$.
+
+The probability that a bidder does not overbid an auction is simply given by the complementary probability
+
+$$
+\mathbb{P}(overbid=0|x) = 1-\mathbb{P}(overbid=1|x)
+$$
+
+and the vector of influencing factors is given by:
+
+$$
+x = \left[ \begin{pmatrix} 1 \\\\ totalleadtime \\\\ lastleadbid \\\\ timeoutbid \_ outstanding \\\\ bidprice \end{pmatrix} \right]
+$$
+
+- `totalleadtime` is the sum of all periods, the bidder is the lead bidder [in days].
+- `lastleadbid` denotes the value of the last lead bid [in $].
+- `timeoutbid_outstanding` stands for the time left in the auction when the bidder is outbid for the final time [in days].
+- `bidprice` represents the last price outstanding when the bidder is outbid for the final time [in $].
+
+The calculation of coefficient vector $\beta$ is based on a maximum likelihood estimation:
+As the auctions are considered to be independent, our `n` observations are drawn from a Bernoulli distribution and the probability function for a bidder to overbid is:
+
+$$
+y = p^{overbid} \cdot (1-p)^{1-overbid}
+$$
+
+The likelihood function is defined as the product of each individual probability.
+$$
+L=\prod_{i=1}^{n} y_i = \prod_{i=1}^{n} p^{overbid_i} \cdot (1-p)^{1-overbid_i}
+$$                                           
+
+This function is maximized afterwards with respect to $\beta$ in order to find the best fitting parameter weights. Instead of maximizing the likelihood function, it is much easier in most cases to maximize the logarithmic likelihood function instead. Because the first order condition leads to an non-linear system of equations, an iterative procedure like the Newton-Raphson method is necessary to solve the problem.
+If you are interested in a detailed description of this approach, please take a look at Davidson, R., & MacKinnon, J. G. (2004).
+
+The following data set `regdata` is our basis and contains bids for all Cashflow 101 auctions. These bids are limited to leading bidders that are outbid at some point. On top of that, only the last bid per bidder and item is used to not let our observations be influenced by bidding multiple times on the same item.
+This means all bids where the bidvalue is higher than the bidvalue of the previous bidder are taken, the winning bids subtracted (because they do not get outbid) and only one observation per bidder (his last bid) is kept.
+
+Load the data set `regdata`. To do so, just press `edit` and `check`. afterwards.
+```{r "7"}
+regdata <- readRDS("regdata.rds")
+```
+
+Take a look at the data `regdata` we use for the regression.
+Press `edit` and `check`
+```{r "7__2"}
+head(regdata)
+```
+
+info("Declaration of Variables - regdata") # Run this line (Strg-Enter) to show info
+
+Because we are not using all of the variables in our regression, we set up a new data frame with only a few selected variables.
+
+Press `edit` and `check` to select only the variables we want to make use of in our model.
+```{r "7__3"}
+mydata <- regdata %>%
+  select(overbid, totalleadtime, lastleadbid=bidvalue, timeoutbid_outstanding, bidprice)
+
+head(mydata)
+```
+
+The following code models the probability of overbidding explained by the variables `totalleadtime`, `lastleadbid`, `timeoutbid_outstanding` and `price`.
+
+Press `edit` and `check`.
+```{r "7__4"}
+myprobit <- glm(overbid ~ totalleadtime + lastleadbid + timeoutbid_outstanding + bidprice, family = binomial(link = "probit"), data = mydata)
+```
+
+info("Function: glm()") # Run this line (Strg-Enter) to show info
+
+Use the function `stargazer()` from the identically named package to show a summary of our regression. One could also use the R standard function `summary()` for a slightly different summary. `stargazer()` however, supports a larger number of models and has additional parameters to work with. The option `report=('vc*p')` is used to display p-values instead of standard errors. With the option `omit.stat` statistical ratios can be hidden in the output.
+
+**Task:** Create a summary of the regression `myprobit` using `stargazer`.
+```{r "7__6"}
+library(stargazer)
+___(myprobit, title="Results", type = "text", report=('vc*p'), omit.stat = "AIC")
+
+```
+
+
+On the right, it is recalled that `overbid` is our dependent variable, predicted by the model. Beneath you can see the best-estimate for the coefficients $\beta$ with the `p-values` right below.
+
+info("The p-value") # Run this line (Strg-Enter) to show info
+
+`Observations` counts the sum of unique bidders per auction.
+
+`Log likelihood` denotes the maximum value of the log likelihood function after the last iteration.
+
+As we can see, all coefficients are positive, assuming these variables have a positive influence on the probability of overbidding. We observe two significant effects: the value of the last lead bid and the time left when being outbid. However, we find no significant relationship between the total time a bidder has led the auction and the probability of overbidding.
+
+### Marginal Effects: How Large is the Effect of a Variable on the Overbid Probability?
+
+The coefficients in the output of `glm()` are often not directly interpretable as they only make sense for linear models (denotes the expected change in `overbid` given a unit change in one variable $x_i$, holding all other variables constant).
+For this reason, researchers normally opt for alternatives like the marginal effects.
+
+
+info("Marginal Effects") # Run this line (Strg-Enter) to show info
+
+Next, we want to visualize the marginal effect of the total lead time on the probability that the auction is overbid. For this purpose, we use the MEMs by creating a vector of some specific values for the variable `totalleadtime` while setting the other variables equal to their mean (e.g. `bidprice` = 79.24). Because auctions usually last 7 days, we choose a sequence of values from 0 to 7 for the total leadtime (there is only 1 case of `totalleadtime` > 7 days). Once we created the data frame, we add the probability of an overbid predicted by the model.
+
+Just press `edit` and `check` to plot the marginal effect of the total leadtime on the probability that a bidder `overbids` the auction.
+```{r "7__7",fig.width=9, fig.height=7}
+
+# set total leadtime to a squence from 0 to 7 and other variables to their means
+
+newdata <- regdata %>%
+  mutate(totalleadtime = seq(from = 0, to = 7, length.out = n())) %>%
+  mutate(lastleadbid = rep(mean(bidvalue),  n())) %>%
+  mutate(timeoutbid_outstanding = rep(mean(timeoutbid_outstanding),  n())) %>%
+  mutate(bidprice = rep(mean(bidprice), n())) %>%
+  select(totalleadtime, lastleadbid, timeoutbid_outstanding, bidprice)
+
+# draw prob of overbidding against total lead time
+
+newdata[, c("overbid")] <- predict(myprobit, newdata, type = "response")
+
+head(round(newdata,6))
+```
+The table shows the first few rows of the data plotted directly below it. The total leadtime is set to a sequence of values, ranging from 0 to 7 days. All other variables are set equal to their means respectively. This is done for the value of the last lead bid. It also applies for the time and price outstanding when being outbid for the last time. The last column shows the probability for an overbid, predicted by the model with:
+
+$$
+p = \Phi(\beta^T \cdot x) = \Phi \left[ \begin{pmatrix} -10.579 & 0.006 & 0.078 & 0.125 & 0.002 \end{pmatrix} \cdot \begin{pmatrix} 1 \\\\ totalleadtime \\\\ lastleadbid = 89.40 \\\\ timeoutbid \_ outstanding = 3.21 \\\\ bidprice = 79.24 \end{pmatrix}\right]
+$$
+
+Press `edit` and `check` to plot the table.
+```{r "7__8",fig.width=9, fig.height=7}
+ggplot(newdata, aes(x = totalleadtime, y = overbid)) + geom_line() + facet_wrap(~timeoutbid_outstanding)
+```
+
+
+Looking at this plot, we observe that the probability for receiving an overbid increases with the time a bidder leads the auction. Despite that the graph looks like a straight up going line, marginal effects are usually not linear as we know. However, this positive effect is almost neglectable as the probability increases by 0.0019% when the total leadtime amounts for 2 days instead of 1. Furthermore, this effect is not significant anyway as we have seen before.
+
+Usually, marginal effects are not calculated by hand of course. There is a command for average marginal effects (AME). It is called `margins()`. Using `summary()` along with it, some additional output is produced: standard error, z and p-value as well as the 95% confidence interval.
+
+Press `edit` and `check` to see the AME of our Variables.
+```{r "7__9"}
+library(margins)
+x <- c("totalleadtime", "lastleadbid", "timeoutbid_outstanding", "bidprice")
+m <- summary(margins(myprobit)) %>% arrange(match(factor, x))
+
+m
+```
+
+We can see the least average impact for the item price before the bidder was outbid and the total lead time. The highest impact has the time left when being outbid for the last time. A change of `timeoutbid_outstanding` by 1 unit (= 1 day) increases the probability of overbidding by 1.2% on average. In summary, as we have already seen at the coefficient table: The bid price outstanding when being outbid and the total lead time are not significant.
+
+The next code chunk visualizes this table of average marginal effects so that we can compare the results better with a single view.
+
+Press `edit` and `check` to visualise this summary of average marginal effects.
+```{r "7__10"}
+
+# define lables
+
+m <- m %>%
+  mutate(unit= c("\n+$1", "\n+$1", "\n+1 day", "\n+1 day")) %>%
+  mutate(details= paste(factor, unit)) %>%
+  mutate(order = factor(details, as.character(details)))
+
+# plot marginal effects
+
+ggplot(data=m, aes(y=m$AME)) +
+  geom_bar(aes(x=m$order), stat="identity", fill="steelblue") +
+  geom_text(aes(x=m$order, label=percent(m$AME)), position=position_dodge(width=0.9), vjust=-0.25)+
+  ylab("change of probability in %")+
+  xlab("parameter")+
+  ggtitle("Average marginal effects on the probability of overbidding")
+```
+Remember that price and totalleadtime are not significant. Therefore, we should not consider these effects being relevant.
+
+
+### Restriction 1: First Bid is Not an Overbid
+
+To check the robustness of our regression, we are going to modify our data. Because we want to measure the effect of the participation length in form of the total lead time, bidders who overbid from the start distort our results. Thus, we remove those bidders with strange estimates of item prices and restrict our sample to bidders whose first bid is not an overbid.
+
+Press `edit` and `check` to run the code.
+```{r "7__11"}
+
+# filter first bids
+
+mydata1 <- regdata %>%
+  filter(firstbid.overbid==0) %>%
+  select(overbid.restr1=overbid, totalleadtime, lastleadbid=bidvalue, timeoutbid_outstanding, bidprice)
+
+# regress
+
+myprobit1 <- glm(overbid.restr1 ~ totalleadtime + lastleadbid + timeoutbid_outstanding + bidprice, family = binomial(link = "probit"), data = mydata1)
+
+# summarise
+
+stargazer(myprobit, myprobit1, title="Results", type = "text", report=('vc*p'), omit.stat = "AIC")
+```
+
+We actually reduced our sample size by 48 observations. When we compare the resulting table to the summary of our original data set, we recognise small changes in the coefficients. However, this modification does not change any level of significance.
+
+### Restriction 2: First Lead Bid is Not an Overbid
+
+Following the concept of total lead time effecting overbidding, we can restrict our sample even further to only bidders whose first bid that makes them the lead bidder is not an overbid. This way, we strike out bidders with a first bid in every auction being below the BIN price but who nevertheless did not have any leadtime before submitting an overbid.
+
+Press `edit` and `check` to run the code.
+```{r "7__12"}
+
+# filter first lead bids
+
+mydata2 <- regdata %>%
+  filter(firstleadbid.overbid==0) %>%
+  select(overbid.restr2=overbid, totalleadtime, lastleadbid=bidvalue, timeoutbid_outstanding, bidprice)
+
+# regress
+
+myprobit2 <- glm(overbid.restr2 ~ totalleadtime + lastleadbid + timeoutbid_outstanding + bidprice, family = binomial(link = "probit"), data = mydata2)
+
+# summarise
+
+stargazer(myprobit, myprobit1, myprobit2, title="Results", type = "text", report=('vc*p'), omit.stat = "AIC")
+```
+
+We find an overall reduction of the p-values which indicates that we actually decrease noise in our data by restricting it this way. However, this effect is not large enough to increase the level of significance. So far, as it concerns the parameters, we see only small deviations.
+
+We find significant positive effects for the value of the last lead bid. This is quite intuitive as overbidding is defined as exceeding a certain threshold for the bid price: The BIN price, which is constant in 83% of all cases ($129.95). The time outstanding at the last outbid has also a significant positive effect which is not as intuitive as the bid price. It is plausible however, when we consider the share of overbidders (17%) and their disproportional influence on auctions. As irrational bidders are the minority, most bidders will not continue bidding when there has been an overbid. An early overbid should win the auction right away in many cases. We find no significant effect for the value of the last bid price. Although it depends on the last lead bid, the bid price varies depending on the price before and the increment.
+Unfortunately, we find no effect for our primary variable: the relationship between the total lead time a bidder leads an auction and the probability of overbidding. The same holds if we restrict our sample to only bidders who do not overbid with their first bid or first lead bid. Therefore, we find no direct evidence for the quasi-endowment effect explaining overbidding behaviour.
+
+
+
+## Exercise 8 (Excursus) -- Availability of BIN Offers
+
+The data sets we work with in this problem set were already prepared, such that every auction definitely has a related BIN offer. In fact, we only consider auctions where a BIN offer for the same item is available throughout the entire auction period. Otherwise, our observations would be falsified if bidders do not always have the option to buy the item immediately for a fixed price outside the auction.
+
+In addition to the original paper, we investigate in this exercise the presence of "gaps" where BIN offers are not available for the Cashflow game. For this purpose, we take a look into the data set `BIN` which contains all buy-it-now offers for Cashflow 101 from Feb 16 to Sep 02 of 2004. Furthermore, you will learn a bit more about how to deal with time formats in R.
+
+
+Start with loading the data set `BIN`. To do so, just press `edit` and `check` afterwards.
+```{r "8__Excursus_"}
+BIN <- readRDS("BIN.rds")
+```
+
+**Task:** Take a first look at the BIN data using the `head()` function
+```{r "8__Excursus___2"}
+head(___)
+
+```
+The columns `start` and `end` contain so called **POSIXct** elements, 
+an R intern data type classifying the variable as a time object.
+In order to make it easier to do calculations and comparisons with them, we convert these variables into numeric numbers. The function `as.numeric()` converts POSIXct objects into seconds counted from a fixed point in time. This fixed point is "1970-01-01 0:00:00"" by default. However, it is irrelevant for doing calculations as long as all numbers have the same basis. More details can be found in the info box below:
+
+info("POSIXct and Other Time Objects") # Run this line (Strg-Enter) to show info
+
+**Task:** Add 2 new columns to the dataset containing the start and end times in seconds. Make use of the R base function `as.numeric()` which converts different types of variables (like date format) to numeric values.
+```{r "8__Excursus___7"}
+BIN <- BIN %>%
+  mutate(start.numeric = ___) %>%
+  mutate(end.numeric = ___)
+
+head(BIN)
+
+```
+
+Now we make use of another support function: `cummax()`. It computes for each row the maximum of end times up to this point. The data frame is sorted by `start` in ascending order, so we can check whether the maximum endtime overlaps with the start time of the next BIN offer. In this case, the next BIN offer starts before the last one ends.
+Check the info box for a detailed description of this concept:
+
+info("Function: cummax()") # Run this line (Strg-Enter) to show info
+
+Now as we have our tools together, we use the `lead()` function again to refer to the next row of the data frame and check for overlaps.
+
+Press `edit` and `check` to add a new column to the data frame which signals overlapping BIN offers.
+
+```{r "8__Excursus___9"}
+BIN <- BIN %>%
+  mutate(cummax = cummax(end.numeric)) %>%
+  mutate(overlaps = cummax>lead(start.numeric, default=NA))
+
+head(BIN)
+```
+The Column `overlaps` is `TRUE` for all overlapping periods and indicates a missing BIN offer between the current line and the next one by being `FALSE`.
+
+**Task:** Find out at which times there is no overlap of BIN offers. You can for example use the R standard function `which()` or the function `filter()` from the dplyr package (then you will need to call `library(dplyr)` again).
+
+**Note** that you can display lines from row number `x` to `y` by using the command `BIN[x:y,]`.
+```{r "8__Excursus___10"}
+#...
+```
+
+### Quiz 4: Missing BIN Offers
+#! addon__quiz__Missing BIN Offers
+
+Finally, we can conclude that in the period of collecting data for the Cashflow game from Feb 16 to Sep 02 of 2004, there is always a BIN offer active except for 2 time periods of about a week. Therefore, we should not evaluate auctions within that time (which has already been done before creating the data set `cf`).
+
+
+## Exercise 9 -- Conclusion
+
+In this interactive problem set, we investigated the Bidder's Curse phenomenon of bidding more than an item actually costs and showing others the own irrational behaviour when being picked as a winner subsequently. In Exercise 1, we made ourselves familiar with the auction platform eBay and its functioning. For this assessment, we used the availability of BIN offers where the same item can be purchased for a fixed price at the same time. We found a high proportion of bidders who bid more than it would cost at the corresponding BIN listing. This applies for the board game "Cashflow 101" (Exercise 2) as well as for almost all other types of items (with automotive products being the only exception) (Exercises 4 and 5). We saw in Exercise 3 that this type of irrational bidders is indeed the minority, however, the design of auctions chooses them as winners.
+
+In Exercise 6, we explored possible explanations for this behaviour and found overbidding being very persistent throughout all demographic groups and price levels. Furthermore, it seems that experience does not prevent from making unreasonable decisions regarding bidding at auctions. Overbidding among experienced bidders is as common as it is among inexperienced ones.
+We also considered gaining extra "utility from winning" as one possible reason and used the quasi-endowment effect statistic. We analysed the influence of accumulated leading time at auctions on the probability of overbidding in Exercise 7 and found no significant effect.
+The lack of significant correlation between the time spent and overbidding probability also rules out other approaches like considering sunk costs. "Individuals who are outbid by others may feel the need to justify their previous bids and their time investments, leading them to continue bidding even when they have reached their limits." (Ku, G., Malhotra, D., & Murnighan, J. K. (2005))
+
+Another explanation for overbidding in auctions is that bidders make estimation errors and the framework of auctions induces the selection of overoptimistic bidders (Compte, O. (2004)). However, this literature investigates auctions only, without a possibility to buy at fixed price offers. In our framework, the BIN offer serves as a reference point for an item's valuation and should eliminate wrong estimations. Approaches like belief-based estimations about the value of items or about the behaviour of other bidders (Eyster, E., & Rabin, M. (2005)) are not suited to explain overbidding in our data as it would be optimal to switch to the BIN offer once the fixed price is exceeded.
+
+Unfortunately, we cannnot provide an intuitive explanation for the observed results. It is possible though, that bidders fail to remember the BIN listing when rebidding. When someone is outbid, eBay messages him with a note saying "You have been outbid!" along with a direct link to the auction. This message can be a reason for limited attention towards the fixed price, leading to a different behaviour from what traditional auction theory suggests.
+
+
+If you want to see all the awards you have collected in this problem set, press `edit` and `check` afterwards. There is a maximum number of 8 awards achievable.
+```{r "9"}
+awards()
+```
+
+I hope you enjoyed our journey of learning more about bidders' behaviour in auctions and improved your data handling skills in R. If you like to solve more exercises of this kind, feel free to check out other problem sets about different economic articles at [GitHub](https://github.com/skranz/RTutor/).
+
+## Exercise References
+
+### Bibliography
+
+
+- Bartus, T. (2005): "Estimation of marginal effects using margeff". The Stata Journal, 5(3), 309-329.
+
+- Beck, C. (2012). "Handling date-times in R".
+
+- Black, G. S. (2007). Consumer demographics and geographics: Determinants of retail success for online auctions. Journal of Targeting, Measurement and Analysis for Marketing, 15(2), 93-102.
+
+- Compte, O. (2004). Prediction errors and the winner’s curse. Unpublished manuscript.
+
+- Cooper, D. J., & Fang, H. (2008). Understanding overbidding in second price auctions: An experimental study. The Economic Journal, 118(532), 1572-1595.
+
+- Davidson, R., & MacKinnon, J. G. (2004). "Econometric theory and methods (Vol. 5)". New York: Oxford University Press.
+
+- eBay (2019): "Automatic bidding". https://www.eBay.com/help/buying/bidding/automatic-bidding?id=4014 (20.02.2019).
+
+- Eyster, E., & Rabin, M. (2005). Cursed equilibrium. Econometrica, 73(5), 1623-1672.
+
+- Garratt, R. J., Walker, M., & Wooders, J. (2012). Behavior in second-price auctions by highly experienced eBay buyers and sellers. Experimental Economics, 15(1), 44-57.
+
+- Goodman, S. (2008, July). A dirty dozen: twelve p-value misconceptions. In Seminars in hematology (Vol. 45, No. 3, pp. 135-140). WB Saunders.
+
+- Harstad, R. M., Kagel, J. H., & Levin, D. (1990). Equilibrium bid functions for auctions with an uncertain number of bidders. Economics Letters, 33(1), 35-40.
+
+- Heyman, J. E., Orhun, Y., & Ariely, D. (2004). "Auction fever: The effect of opponents and quasi-endowment on product valuations". Journal of interactive Marketing, 18(4), 7-21.
+
+- Kagel, J. H., Harstad, R. M., & Levin, D. (1987). Information impact and allocation rules in auctions with affiliated private values: A laboratory study. Econometrica: Journal of the Econometric Society, 1275-1304.
+
+- Kagel, J. H., & Levin, D. (2009): "Common value auctions and the winner's curse". Princeton University Press.
+
+- Kiyosaki, R. (1996): "Cashflow 101". http://www.richdad.com/about/rich-dad (16.01.2019).
+
+- Ku, G., Malhotra, D., & Murnighan, J. K. (2005). Towards a competitive arousal model of decision-making: A study of auction fever in live and Internet auctions. Organizational Behavior and Human decision processes, 96(2), 89-103.
+
+- Le, J. (2018): "Logistic Regression in R Tutorial". https://www.datacamp.com/community/tutorials/logistic-regression-R (27.03.2019).
+
+- Leeper, T. J. (2017): "Interpreting regression results using average marginal effects with R’s margins". Available at the comprehensive R Archive Network (CRAN).
+
+- Malmendier, U., & Lee, Y. H. (2011): "The Bidder's Curse". American Economic Review, 101(2), 749-87.
+
+- Paradis, E. (2002). "R for Beginners".
+
+- Wagner, C. H. (1982): "Simpson's paradox in real life". The American Statistician, 36(1), 46-48.
+
+- Wolf, J. R., Arkes, H. R., & Muhanna, W. A. (2005). Is Overbidding in Online Auctions the Result of a Pseudo-Endowment Effect?.
+
+- Yeh, J. C., Hsiao, K. L., & Yang, W. N. (2012). A study of purchasing behavior in Taiwan's online auction websites: Effects of uncertainty and gender differences. Internet Research, 22(1), 98-115.
+
+### R Packages
+
+- Auguie, B. (2017): gridextra. “Miscellaneous Functions for "Grid” Graphics", R package version 2.3, http://CRAN.R-project.org/package=gridExtra
+
+- Hlavac, M. (2018): stargazer. “Well-Formatted Regression and Summary Statistics Tables”, R package version 5.2.2, http://CRAN.R-project.org/package=stargazer
+
+- Kranz, S. (2019): RTutor. “Creating interactive R Problem Sets. Automatic hints and solution checks.”, R package version 2019.02.11, https://github.com/skranz/RTutor
+
+- Leeper, T. J. (2018): margins: "Marginal Effects for Model Objects", R package version 0.3.23, https://CRAN.R-project.org/package=margins
+
+- Wickham, H., Francois, R., Henry, L., Muller, K. (2019): dplyr. "A Grammar of Data Manipulation", R package version 0.7.8, http://CRAN.R-project.org/package=dplyr
+
+- Wickham, H., Chang, W., Henry, L., Pedersen, T., L., Takahashi, K., Wilke, C., Woo, K. (2018): ggplot2. “Create Elegant Data Visualisations Using the Grammar of Graphics”, R package version 2.2.1, http://CRAN.R-project.org/package=ggplot2
+
+- Wickham, H. (2018): scales. "Scale Functions for Visualization", R package version 1.0.0, https://CRAN.R-project.org/package=scales
+
+- Wickham, H., Henry, L. (2019): tidyr. "Easily Tidy Data with 'spread()' and 'gather()' Functions", R package version 0.8.2 https://CRAN.R-project.org/package=tidyr
